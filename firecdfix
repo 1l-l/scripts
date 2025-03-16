@@ -1,5 +1,6 @@
 function fireclickdetector(part)
 	pcall(function()
+		print("Firing: ", part:GetFullName())
 		workspace.CurrentCamera.CameraSubject = part
 		game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.LockCenter
 		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, part.Position)
