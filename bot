@@ -1,1 +1,245 @@
+local function findPlayer(partialName)
+	partialName = partialName:lower()
+	for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+		if p.Name:sub(1, #partialName):lower() == partialName or p.DisplayName:sub(1, #partialName):lower() == partialName then
+			return p
+		end
+	end
+end
 
+local owner
+
+pcall(function()
+	owner = game.Players[_G.Owner] or findPlayer(_G.Owner)
+end)
+
+local character = game.Players.LocalPlayer.Character
+
+if not owner then
+	print("Owner not found.")
+	return
+end
+
+local whitelist = {}
+table.insert(whitelist, owner)
+local chatConnections = {}
+
+local prefix = "."
+
+game.Workspace.FallenPartsDestroyHeight = 0/0
+
+local function saymsg(text)
+	game.ReplicatedStorage.Chat:FireAllClients(character.Head, text)
+end
+
+character.Humanoid.Died:Connect(function()
+
+end)
+
+-- Animations
+local levitateidle = Instance.new("Animation")
+levitateidle.AnimationId = "rbxassetid://616006778"
+local levitateRun = Instance.new("Animation")
+levitateRun.AnimationId = "rbxassetid://10921135644"
+local bend = Instance.new("Animation")
+bend.AnimationId = "rbxassetid://4689362868"
+
+-- Varibles
+local connection = function() end
+local following = false
+local floating = false
+local benx = false
+local orbiting = false
+
+function stop()
+	connection:Disconnect()
+	following = false
+	floating = false
+	benx = false
+end
+
+function handleCmd(parts, target, player)
+	local cmd = string.sub(parts[1], #prefix + 1)
+	
+	if cmd == "whitelist" and target then -- Whitelist
+		if not table.find(whitelist, target) then
+			table.insert(whitelist, target)
+			saymsg(target.DisplayName.." has been whitelisted.")
+			chatted(target)
+		else
+			saymsg("Player is already whitelisted.")
+		end
+
+	elseif cmd == "unwhitelist" and target then -- Unwhitelist
+		local index = table.find(whitelist, target)
+		if index and target ~= owner then
+			table.remove(whitelist, index)
+			saymsg(target.DisplayName.." has been unwhitelisted.")
+			if chatConnections[target] then
+				chatConnections[target]:Disconnect()
+				chatConnections[target] = nil
+			end
+		else
+			saymsg("Player is not whitelisted.")
+		end
+	elseif cmd == "follow" then -- Follow command
+		following = true
+		if not target then target = owner end
+		while following do task.wait(0.2)
+			local cf = player.Character.PrimaryPart.CFrame
+			character.Humanoid:MoveTo(cf.Position + cf.LookVector * -5)
+		end
+	elseif cmd == "stop" then -- Stop
+		stop()
+	elseif cmd == "commands" or cmd == "cmds" then -- Commands
+		saymsg("stop, sit, jump, chat, prefix, rejoin, execute")
+		saymsg("whitelist, unwhitelist, owner, follow, float, orbit, fling, tp, inventory, age")
+	elseif cmd == "dance" then
+		saymsg("/e dance")
+	elseif cmd == "jump" then
+		character.Humanoid.Jump = true
+	elseif cmd == "sit" then
+		character.Humanoid.Sit = true
+	elseif cmd == "reset" then
+		character.Humanoid.Health = 0
+	elseif cmd == "say" or cmd == "chat" then
+		saymsg(table.concat(parts, " ", 2))
+	elseif cmd == "float" then
+		floating = true
+		local tilt = Vector3.new()
+		local walking = false
+		connection = character.Humanoid.Running:Connect(function(speed)
+			if speed > 0 and not walking then
+				walking = true
+				character.Humanoid.Animator:LoadAnimation():Play()
+				for i = 0, 20, 1 do
+					tilt = tilt + Vector3.new(1, 0, 0)
+					task.wait()
+				end
+			else
+				walking = false
+				character.Humanoid.Animator:LoadAnimation(levitateidle):Stop()
+			end
+		end)
+
+		while floating do
+			task.wait()
+			character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(2,2,3)
+		end
+
+	elseif cmd == "inventory" or cmd == "inv" then
+		if not target then saymsg("Invalid target") return end
+		for _, v in pairs(target.Backpack:GetChildren()) do
+			saymsg(v.Name)
+			task.wait(0.5)
+		end
+	elseif cmd == "age" then
+		if not target then saymsg("Invalid target.") return end
+		saymsg(target.AccountAge)
+	elseif cmd == "owner" then
+		if findPlayer(parts[3]) then
+			owner = findPlayer(parts[3])
+			saymsg("Transfered bot ownership to "..target.Name..".")
+		else
+			saymsg("Invalid target")
+		end
+	elseif cmd == "play" then
+		if string.lower(parts[2]) == "quiz" then
+			saymsg("Loading quiz game...")
+		else
+			saymsg("Invalid game. Games: Quiz")
+		end
+	elseif cmd == "bend" then
+		if not target then saymsg("Invalid target") return end
+		benx = true
+		character.Humanoid.Animator:LoadAnimation(bend):Play()
+		pcall(function()
+			while benx do
+				local lv = character.HumanoidRootPart.CFrame.LookVector
+				for i = 0, 1, 0.1 do
+					character.HumanoidRootPart.CFrame = character.HumanoidRootPart.CFrame:Lerp(target.Character.HumanoidRootPart.CFrame+lv * 3, i)
+					task.wait()
+				end
+				for i = 0, 1, 0.1 do
+					character.HumanoidRootPart.CFrame = character.HumanoidRootPart.CFrame:Lerp(target.Character.HumanoidRootPart.CFrame + lv, i)
+					task.wait()
+				end
+			end
+		end)
+	elseif cmd == "fling" then
+		if not target then saymsg("Invalid target") return end
+		saymsg("Cant fling because player has no collisions.")
+	elseif cmd == "prefix" then
+		prefix = parts[2]
+		saymsg("Set prefix to "..parts[2])
+	elseif cmd == "tp" then
+		if not target then target = owner end
+		pcall(function()
+			character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+		end)
+	elseif cmd == "orbit" then
+		orbiting = true
+		pcall(function()
+			local angle = 0
+			local r = 10
+			while orbiting do
+				task.wait()
+				angle = (angle + 0.05 * math.pi) % (2 * math.pi)
+				character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(math.cos(angle) * r, 0, math.sin(angle) * r)
+			end
+		end)
+	elseif cmd == "execute" then
+		if player ~= owner then	saymsg("You do not have permission to run this command.") return end
+		local s, err = pcall(function()
+			loadstring(table.concat(parts, " ", 2))
+		end)
+		if s then
+			saymsg("Successfully ran code.")
+		else
+			saymsg(tostring(err))
+		end
+	elseif cmd == "rejoin" then
+		if player ~= owner then	saymsg("You do not have permission to run this command.") return end
+		pcall(queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/1l-l/scripts/refs/heads/main/bot"))'))
+		game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game:GetService("Players").LocalPlayer)
+	end
+end
+
+function chatted(player)
+	if not chatConnections[player] then
+		chatConnections[player] = player.Chatted:Connect(function(message)
+			if string.sub(message, 1, #prefix) ~= prefix then return end
+			local parts = string.split(string.lower(message), " ")
+			
+			if parts[2] == "me" then
+				handleCmd(parts, player, player)
+			elseif parts[2] == "random" then
+				handleCmd(parts, game:GetService("Players")[math.random(#game:GetService():GetPlayers())], player)
+			elseif parts[2] == "all" then
+				for _, v in pairs(game:GetService("Players"):GetPlayers()) do
+					handleCmd(parts, v, player)
+				end
+			else
+				local players = {}
+				for i, v in pairs(parts) do
+					if i ~= 1 and findPlayer(v) then
+						table.insert(players, v)
+					end
+					if #players == 0 then
+						handleCmd(parts, nil, player)
+					end
+					for _, v in pairs(players) do
+						handleCmd(parts, v, player)
+					end
+				end
+			end
+
+		end)
+	end
+end
+
+for _, p in ipairs(whitelist) do
+	chatted(p)
+end
+
+saymsg("Script loaded. ".."Type "..'"'..prefix.."cmds"..'"'.." for a list of commands.")
