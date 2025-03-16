@@ -3,6 +3,7 @@ function fireclickdetector(part)
 		workspace.CurrentCamera.CameraSubject = part
 		game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.LockCenter
 		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, part.Position)
+		task.wait()
 		mouse1click()
 		game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.Default
 		workspace.CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character.Humanoid
