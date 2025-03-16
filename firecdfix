@@ -1,10 +1,9 @@
-function fireclickdetector(part)
+function fireclickdetector(clickdetector)
 	pcall(function()
-		print("Firing: ", part:GetFullName())
-		workspace.CurrentCamera.CameraSubject = part
+		workspace.CurrentCamera.CameraSubject = clickdetector.Parent
 		game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.LockCenter
-		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, part.Position)
-		task.wait(0.1)
+		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, clickdetector.Parent.Position)
+		task.wait()
 		mouse1click()
 		game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.Default
 		workspace.CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character.Humanoid
