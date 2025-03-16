@@ -4,7 +4,7 @@ function fireclickdetector(clickdetector)
 		clickdetector.MaxActivationDistance = math.huge
 		workspace.CurrentCamera.CameraSubject = part.Parent
 		game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.LockCenter
-		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, part.Position)
+		workspace.CurrentCamera.CFrame = CFrame.new(part.Position)
 		task.wait()
 		mouse1click()
 		game:GetService("UserInputService").MouseBehavior = Enum.MouseBehavior.Default
