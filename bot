@@ -26,15 +26,9 @@ local chatConnections = {}
 
 local prefix = "."
 
-game.Workspace.FallenPartsDestroyHeight = 0/0
-
 local function saymsg(text)
-	game.ReplicatedStorage.Chat:FireAllClients(character.Head, text)
+	game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(text)
 end
-
-character.Humanoid.Died:Connect(function()
-
-end)
 
 -- Animations
 local levitateidle = Instance.new("Animation")
@@ -45,17 +39,20 @@ local bend = Instance.new("Animation")
 bend.AnimationId = "rbxassetid://4689362868"
 
 -- Varibles
-local connection = function() end
+local connection = nil
 local following = false
 local floating = false
 local benx = false
 local orbiting = false
 
 function stop()
-	connection:Disconnect()
+	if connection then
+		connection():Disconnect()
+	end
 	following = false
 	floating = false
 	benx = false
+	orbiting = false
 end
 
 function handleCmd(parts, target, player)
@@ -111,7 +108,7 @@ function handleCmd(parts, target, player)
 		connection = character.Humanoid.Running:Connect(function(speed)
 			if speed > 0 and not walking then
 				walking = true
-				character.Humanoid.Animator:LoadAnimation():Play()
+				character.Humanoid.Animator:LoadAnimation(levitateRun):Play()
 				for i = 0, 20, 1 do
 					tilt = tilt + Vector3.new(1, 0, 0)
 					task.wait()
@@ -124,7 +121,7 @@ function handleCmd(parts, target, player)
 
 		while floating do
 			task.wait()
-			character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(2,2,3)
+			character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(2, 2, 3)
 		end
 
 	elseif cmd == "inventory" or cmd == "inv" then
@@ -200,7 +197,9 @@ function handleCmd(parts, target, player)
 		end
 	elseif cmd == "rejoin" then
 		if player ~= owner then	saymsg("You do not have permission to run this command.") return end
-		pcall(queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/1l-l/scripts/refs/heads/main/bot"))'))
+		pcall(function()
+			queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/1l-l/scripts/refs/heads/main/bot"))')
+		end)
 		game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game:GetService("Players").LocalPlayer)
 	end
 end
