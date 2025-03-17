@@ -7,6 +7,12 @@ local function findPlayer(partialName)
 	end
 end
 
+local function saymsg(text)
+	game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(text)
+end
+
+saymsg("Loading...")
+
 local owner
 
 pcall(function()
@@ -16,7 +22,7 @@ end)
 local character = game.Players.LocalPlayer.Character
 
 if not owner then
-	print("Owner not found.")
+	saymsg("Owner not found.")
 	return
 end
 
@@ -25,10 +31,6 @@ table.insert(whitelist, owner)
 local chatConnections = {}
 
 local prefix = "."
-
-local function saymsg(text)
-	game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(text)
-end
 
 -- Animations
 local levitateidle = Instance.new("Animation")
@@ -103,27 +105,36 @@ function handleCmd(parts, target, player)
 		saymsg(table.concat(parts, " ", 2))
 	elseif cmd == "float" then
 		floating = true
-		local tilt = Vector3.new()
-		local walking = false
-		connection = character.Humanoid.Running:Connect(function(speed)
-			if speed > 0 and not walking then
-				walking = true
+		local t = 0
+		local character = workspace.Rig
+		local humanoid = game.Players.LocalPlayer.Character.Humanoid
+		local running = false
+		local func
+
+		humanoid.Running:Connect(function(speed)
+			if (speed > 0) == running then return end
+			running = speed > 0
+			
+			if running then
 				character.Humanoid.Animator:LoadAnimation(levitateRun):Play()
-				for i = 0, 20, 1 do
-					tilt = tilt + Vector3.new(1, 0, 0)
+			else
+				character.Humanoid.Animator:LoadAnimation(levitateidle):Play()
+			end
+
+			if func then task.cancel(func) end
+
+			func = task.spawn(function()
+				for i = 1, 10 do
+					t = math.clamp(t + (running and -math.rad(3) or math.rad(3)), -math.rad(30), 0)
 					task.wait()
 				end
-			else
-				walking = false
-				character.Humanoid.Animator:LoadAnimation(levitateidle):Stop()
-			end
+			end)
 		end)
 
 		while floating do
 			task.wait()
-			character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(2, 2, 3)
+			character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(2, 2, 3) * CFrame.Angles(t, 0, 0)
 		end
-
 	elseif cmd == "inventory" or cmd == "inv" then
 		if not target then saymsg("Invalid target") return end
 		for _, v in pairs(target.Backpack:GetChildren()) do
@@ -211,12 +222,18 @@ function chatted(player)
 			local parts = string.split(string.lower(message), " ")
 			
 			if parts[2] == "me" then
-				handleCmd(parts, player, player)
+				pcall(function()
+					handleCmd(parts, player, player)
+				end)
 			elseif parts[2] == "random" then
-				handleCmd(parts, game:GetService("Players")[math.random(#game:GetService():GetPlayers())], player)
+				pcall(function()
+					handleCmd(parts, game:GetService("Players")[math.random(#game:GetService():GetPlayers())], player)
+				end)
 			elseif parts[2] == "all" then
 				for _, v in pairs(game:GetService("Players"):GetPlayers()) do
-					handleCmd(parts, v, player)
+					pcall(function()
+						handleCmd(parts, v, player)
+					end)
 				end
 			else
 				local players = {}
@@ -225,10 +242,14 @@ function chatted(player)
 						table.insert(players, v)
 					end
 					if #players == 0 then
-						handleCmd(parts, nil, player)
+						pcall(function()
+							handleCmd(parts, nil, player)
+						end)
 					end
 					for _, v in pairs(players) do
-						handleCmd(parts, v, player)
+						pcall(function()
+							handleCmd(parts, v, player)
+						end)
 					end
 				end
 			end
