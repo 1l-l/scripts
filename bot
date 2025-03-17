@@ -1,3 +1,5 @@
+_G.Owner = "Player1"
+
 local function findPlayer(partialName)
 	partialName = partialName:lower()
 	for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
@@ -104,17 +106,17 @@ function handleCmd(parts, target, player)
 	elseif cmd == "say" or cmd == "chat" then
 		saymsg(table.concat(parts, " ", 2))
 	elseif cmd == "float" then
+		if not target then target = player end
 		floating = true
 		local t = 0
-		local character = workspace.Rig
-		local humanoid = game.Players.LocalPlayer.Character.Humanoid
+		local h = 0
 		local running = false
 		local func
 
-		humanoid.Running:Connect(function(speed)
+		target.Character.Humanoid.Running:Connect(function(speed)
 			if (speed > 0) == running then return end
 			running = speed > 0
-			
+
 			if running then
 				character.Humanoid.Animator:LoadAnimation(levitateRun):Play()
 			else
@@ -129,11 +131,12 @@ function handleCmd(parts, target, player)
 					task.wait()
 				end
 			end)
+
 		end)
 
 		while floating do
 			task.wait()
-			character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(2, 2, 3) * CFrame.Angles(t, 0, 0)
+			character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(2, 2, 3) * CFrame.Angles(t, 0, 0)
 		end
 	elseif cmd == "inventory" or cmd == "inv" then
 		if not target then saymsg("Invalid target") return end
@@ -245,6 +248,7 @@ function chatted(player)
 						pcall(function()
 							handleCmd(parts, nil, player)
 						end)
+						return
 					end
 					for _, v in pairs(players) do
 						pcall(function()
