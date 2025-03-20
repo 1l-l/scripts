@@ -23,6 +23,10 @@ end)
 
 local character = game.Players.LocalPlayer.Character
 
+game.Players.LocalPlayer.CharacterAdded:Connect(function(new)
+	character = new
+end)
+
 if not owner then
 	saymsg("Owner not found.")
 	return
@@ -58,6 +62,10 @@ function stop()
 	benx = false
 	orbiting = false
 end
+
+character.Humanoid.Died:Connect(function()
+	stop()
+end)
 
 function handleCmd(parts, target, player)
 	local cmd = string.sub(parts[1], #prefix + 1)
@@ -109,7 +117,6 @@ function handleCmd(parts, target, player)
 		if not target then target = player end
 		floating = true
 		local t = 0
-		local h = 0
 		local running = false
 		local func
 
@@ -133,11 +140,16 @@ function handleCmd(parts, target, player)
 			end)
 
 		end)
-
+		
+		local align = Instance.new("AlignPosition", character.HumanoidRootPart)
+		align.Mode = Enum.PositionAlignmentMode.OneAttachment
+		align.Attachment0 = Instance.new("Attachment", character.HumanoidRootPart)
+		
 		while floating do
 			task.wait()
-			character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(2, 2, 3) * CFrame.Angles(t, 0, 0)
+			character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(2, 2, 3) * CFrame.Angles(t, 0, 0)
 		end
+
 	elseif cmd == "inventory" or cmd == "inv" then
 		if not target then saymsg("Invalid target") return end
 		for _, v in pairs(target.Backpack:GetChildren()) do
