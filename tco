@@ -554,3 +554,4 @@ Tabs.Other:AddButton({
 			game.Players.LocalPlayer.Character.Toxify.Disabled = true
 		end
 	end
+})
