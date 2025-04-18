@@ -1,4 +1,5 @@
-if game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").MouseEnabled then
+if table.find({Enum.Platform.IOS, Enum.Platform.Android}, game:GetService("UserInputService"):GetPlatform()) then
+	print("Mobile detected loading rayfield UI")
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/1l-l/scripts/refs/heads/main/tco-rayfeildui"))()
 	return
 end
