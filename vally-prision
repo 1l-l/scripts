@@ -1,0 +1,270 @@
+local player = game.Players.LocalPlayer
+local character = player.Character
+
+player.CharacterAdded:Connect(function(newchar)
+    character = newchar
+end)
+
+-- Change team
+function ChangeTeam(team, subteam)
+    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ChangeTeam"):FireServer(team, subteam)
+end
+
+-- Auto heal
+local AutoHealLoopConn
+function AutoHealLoop(TargetCharacter)
+    local LastHealth = TargetCharacter.Humanoid.Health
+    if not (player.Backpack:FindFirstChild("BLS")) or (not character) or (not TargetCharacter) then return false end
+    AutoHealLoopConn = TargetCharacter.Humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+        if TargetCharacter.Humanoid.Health < LastHealth then
+            for i = 0, LastHealth - TargetCharacter.Humanoid.Health do
+                player.Backpack.BLS.LocalScript.RemoteEvent:FireServer(TargetCharacter.Humanoid)
+            end
+        end
+    end)
+    return
+end
+
+-- Grab cuffs
+function GrabCuffs()
+    if not workspace.Tutorial:FindFirstChild(tostring(player.UserId)) then return false end
+    local tries = 0;
+    while character do
+        tries = tries + 1
+        if tries > 100 or player.Backpack:FindFirstChild("Handcuffs") then
+            return
+        end
+        character.PrimaryPart.CFrame = workspace.Tutorial[tostring(player.UserId)].Guard.Handcuffs.Handle.CFrame
+        task.wait()
+        fireproximityprompt(workspace.Tutorial[tostring(player.UserId)].Guard.Handcuffs.Handle.Prompt)
+    end
+    return
+end
+
+--- Anti tase
+local AntiTaseConn
+function EnableAntiTase()
+    AntiTaseConn = character.Humanoid:GetPropertyChangedSignal("PlatformStand"):Connect(function()
+        if character.Humanoid.PlatformStand == true then
+            character.Humanoid.PlatformStand = false 
+        end
+    end)
+end
+
+-- Make solitary doors non collide
+function MakeSolitaryDoorsNonCollide()
+    for _, SL in pairs(workspace.Solitary.Cells:GetChildren()) do
+     for _, v in pairs(SL.Door.Door.DoorMain:GetDescendants()) do
+         if v:IsA("Part") then
+                v.CanCollide = false
+            end
+         end
+    end
+end
+
+-- Grab tool
+local DroppedTools = workspace.DroppedTools
+function GrabDroppedTool(name)
+    local TargetTool = DroppedTools[name]
+    local tries = 0
+    repeat
+        task.wait()
+        tries = tries + 1
+        character.PrimaryPart.CFrame = TargetTool.click_box.CFrame
+        fireclickdetector(TargetTool.click_box.ClickDetector)
+    until tries > 100 or not character or TargetTool.Parent ~= DroppedTools
+end
+
+--             --
+--- FLUENT UI ---  
+--             --
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "Vally Prison Exploits",
+    SubTitle = "V.1.0 BETA",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = false, 
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.RightAlt
+})
+
+function notify2(text) -- Notify function
+    Window:Dialog({
+        Title = "Alert",
+        Content = text,
+        Buttons = {
+            {
+                Title = "Ok",
+                Callback = function() end
+            }
+        }
+    })
+end
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    DroppedItems = Window:AddTab({ Title = "Dropped Items", Icon = "" }),
+    CuffedPlayer = Window:AddTab({ Title = "Cuffed Player", Icon = "" }),
+    Experimental = Window:AddTab({ Title = "Experimental", Icon = "" }),
+    Dev = Window:AddTab({ Title = "Dev", Icon = "" }),
+}
+
+Fluent:Notify({
+    Title = "Notification",
+    Content = "UI Loaded",
+    SubContent = "Vally Prision | Private Script | Not For Public Use | Do Not Share",
+    Duration = 5
+})
+
+--- MAIN TAB ----
+local DropdownSpecTeam = Tabs.Main:AddDropdown("SpecifiedTeam", {
+    Title = "Specified Team",
+    Values = {"Menu", "Department of Corrections", "Civilian", "Booking", "State Police"},
+    Multi = false,
+    Default = 1,
+ })
+ local DropdownSpecSubTeam = Tabs.Main:AddDropdown("SpecifiedSubTeam", {
+    Title = "Specified Sub-Team",
+    Values = {"None", "Correctional Officer", "Medical Staff", "Janitor", "Cook", "Director", "Assistant Director", "Matenance", "Correctional Emergency Responce Team", "Riot Officer", "Employee"},
+    Multi = false,
+    Default = 1,
+ })
+
+Tabs.Main:AddButton({
+    Title = "Switch Team",
+    Description = "Quickly switches team without going to menu.",
+    Callback = function()
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ChangeTeam"):FireServer(DropdownSpecTeam.Value, (DropdownSpecSubTeam.Value == "None" and nil) or DropdownSpecSubTeam.Value)
+    end
+})
+--[[
+local AutoHealPlayersInput = Tabs.Main:Addinput("AutoHealPlayersInput", {
+    Title = "Player to Heal",
+    Placeholder = "Player Username",
+    Multi = false,
+    Default = 1,
+ })
+ local AutoHealPlayersButton = Tabs.Main:Addinput("AutoHealPlayersButton", {
+    Title = "Apply Auto Heal to Player",
+    Multi = false,
+    Default = 1,
+    Callback = function()
+        --AutoHealPlayersInput.Value
+    end
+ })
+  local RemoveHealPlayersButton = Tabs.Main:Addinput("RemoveHealPlayersButton", {
+    Title = "Remove Auto Heal to Others",
+    Multi = false,
+    Default = 1,
+    Callback = function()
+        
+    end
+ })
+ ]]
+local ToggleSelfHeal; ToggleSelfHeal = Tabs.Main:AddToggle("SelfHeal",{
+    Title = "Auto Heal Self",
+    Description = "Requires BLS in backpack.",
+    Default = false,
+    Callback = function(value)
+        if value == true then
+            local HealLoop = AutoHealLoop(player.Character)
+            if HealLoop == false then
+                notify2("Cannot self heal, BLS is required.")
+                ToggleSelfHeal:SetValue(false)
+            end
+        elseif AutoHealLoopConn then
+            AutoHealLoopConn:Disconnect()
+        end
+    end
+})
+
+local ToggleAntiTase = Tabs.Main:AddToggle("AntiTase",{
+    Title = "Anti Tase",
+    Description = "Prevents you from not being able to move when tased.",
+    Default = false,
+    Callback = function(value)
+        if value == true then
+            EnableAntiTase()
+        elseif AntiTaseConn then
+            AntiTaseConn:Disconnect()
+        end
+    end
+})
+
+--- DROPPED ITEMS TAB ---
+workspace.DroppedTools.ChildAdded:Connect(function(item)
+    local AddedButton = Tabs.DroppedItems:AddButton({
+        Title = item.Name,
+        Callback = function()
+            GrabDroppedTool(item.Name)
+        end})
+    local AncChanceConn; AncChanceConn = item.AncestryChanged:Connect(function(child, newp)
+        if newp ~= workspace.DroppedTools then
+            AddedButton:Destroy()
+            AncChanceConn:Disconnect()
+        end
+    end)
+end)
+
+--- CUFFED PLAYER TAB ---
+Tabs.CuffedPlayer:AddButton({
+    Title = "Eliminate",
+    Description = "Kills the cuffed player by teleporting them into the void.",
+    Callback = function()
+        
+    end
+})
+Tabs.CuffedPlayer:AddButton({
+    Title = "Solitary",
+    Description = "Puts the cuffed player into solitary.",
+    Callback = function()
+        
+    end
+})
+Tabs.CuffedPlayer:AddButton({
+    Title = "Glitch",
+    Description = "Teleports the cuffed player into the sky.",
+    Callback = function()
+        
+    end
+})
+Tabs.CuffedPlayer:AddButton({
+    Title = "Control",
+    Description = "This does nothing, but it's a possible feature I might add.",
+    Callback = function() end
+})
+
+--- EXPERIMENTAL ---
+Tabs.Experimental:AddButton({
+    Title = "Grab Cuffs From Tutorial",
+    Description = "Grabs the cuffs from the DOC tutorial, if active.",
+    Callback = function()
+        local GrabCuffsFunc = GrabCuffs()
+        if GrabCuffsFunc == false then
+            notify2("There is no active DOC tutorial.")
+        end
+    end
+})
+
+--- DEV ---
+Tabs.Dev:AddButton({
+    Title = "Dex",
+    Callback = function()
+        loadstring(game:HttpGet("https://github.com/Tesker-103/DexRecontinued/releases/latest/download/out.lua"))()
+    end
+})
+
+Tabs.Dev:AddButton({
+    Title = "Remote Spy",
+    Callback = function()
+        loadstring(game:HttpGet("https://scriptblox.com/raw/Universal-Script-ADV-REMOTE-SPY-TOOL-232946"))()
+    end
+})
+
+-- Character Removing
+player.CharacterRemoving:Connect(function()
+    ToggleSelfHeal:SetValue(false)
+end)
